@@ -57,7 +57,7 @@ impl Job {
     }
 
     pub async fn run(&self, config: ValidConfig) -> Result<(), Box<dyn std::error::Error>> {
-        let invoice = LnurlService::new(self.config_job.clone())
+        let invoice = LnurlService::new(self.config_job.clone(), config.currency.clone())
             .get_invoice(&self.url)
             .await?;
 

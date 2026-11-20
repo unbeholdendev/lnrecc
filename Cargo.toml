@@ -5,10 +5,12 @@ edition = "2021"
 
 [dependencies]
 bech32 = "0.11.0"
+bitcoin = "0.32"
 chrono = "0.4.38"
 clap = { version = "4.5.16", features = ["derive"] }
 cron = "0.12.1"
 env_logger = "0.11.5"
+lightning-invoice = { version = "0.34.2", features = ["std"] }
 log = "0.4.22"
 openssl = { version = "0.10", features = ["vendored"] }
 reqwest = { version = "0.12.7", features = ["json"] }

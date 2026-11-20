@@ -1,3 +1,4 @@
+use lightning_invoice::Currency;
 use log::{info, warn};
 use std::error::Error;
 use tonic_lnd::lnrpc::payment::PaymentStatus;
@@ -6,6 +7,38 @@ use crate::{
     config::{ConfigJob, ValidConfig},
     lnurl::LnurlPaymentRequestResponse,
 };
+
+pub async fn get_currency(
+    server_url: &str,
+    cert_path: &str,
+    macaroon_path: &str,
+) -> Result<Currency, Box<dyn Error>> {
+    let mut client = tonic_lnd::connect(server_url.to_owned(), cert_path, macaroon_path).await?;
+
+    let info = client
+        .lightning()
+        .get_info(tonic_lnd::lnrpc::GetInfoRequest {})
+        .await?
+        .into_inner();
+
+    let network = match info.chains.first() {
+        Some(chain) => chain.network.as_str(),
+        None => return Err("LND reported no chain".into()),
+    };
+
+    currency_from_network(network).ok_or_else(|| format!("Unknown network {}", network).into())
+}
+
+fn currency_from_network(network: &str) -> Option<Currency> {
+    match network {
+        "mainnet" => Some(Currency::Bitcoin),
+        "testnet" | "testnet4" => Some(Currency::BitcoinTestnet),
+        "signet" => Some(Currency::Signet),
+        "regtest" => Some(Currency::Regtest),
+        "simnet" => Some(Currency::Simnet),
+        _ => None,
+    }
+}
 
 pub async fn pay_invoice(
     invoice: LnurlPaymentRequestResponse,

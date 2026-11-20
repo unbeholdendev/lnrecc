@@ -4,7 +4,17 @@ A tool for streamlining recurring lightning payments. Weekly pocket money for yo
 
 ## Prerequisites
 
-You need to have a gRPC API access to LND lightning node you want to spend from, which includes a macaroon and a cert file.
+You need gRPC access to the LND node you want to spend from: its TLS cert and a macaroon.
+
+Don't give lnrecc `admin.macaroon`. lnrecc calls two RPCs, `lnrpc.Lightning/GetInfo` at startup to read the node's network and `routerrpc.Router/SendPaymentV2` to pay. Bake a macaroon that allows only those:
+
+```
+lncli bakemacaroon --save_to lnrecc.macaroon \
+  uri:/lnrpc.Lightning/GetInfo \
+  uri:/routerrpc.Router/SendPaymentV2
+```
+
+`lncli bakemacaroon` itself needs a macaroon with `macaroon:generate` permission, such as `admin.macaroon`. Set `macaroon_path` to the new file.
 
 ## Installation
 
@@ -24,7 +34,7 @@ Optional CLI parameters:
 ### Default config
 
 ```
-macaroon_path: "/home/my-user/.lnd/data/chain/bitcoin/mainnet/admin.macaroon"
+macaroon_path: "/home/my-user/.lnd/lnrecc.macaroon"
 cert_path: "/home/my-user/.lnd/tls.cert"
 server_url: "https://localhost:10009"
 jobs:

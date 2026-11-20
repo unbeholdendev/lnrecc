@@ -1,4 +1,5 @@
-use crate::job::Job;
+use crate::{job::Job, nodes::lnd::get_currency};
+use lightning_invoice::Currency;
 use log::error;
 use serde::Deserialize;
 use std::{fs, process};
@@ -28,6 +29,7 @@ pub struct ValidConfig {
     pub macaroon_path: String,
     pub cert_path: String,
     pub server_url: String,
+    pub currency: Currency,
     pub jobs: Vec<Job>,
 }
 
@@ -66,18 +68,26 @@ impl ValidConfig {
             Some(jobs) => jobs.iter().map(|job| Job::new(job.to_owned())).collect(),
         };
 
-        tonic_lnd::connect(
-            config.server_url.to_owned(),
+        let currency = match get_currency(
+            &config.server_url,
             &config.cert_path,
             &config.macaroon_path,
         )
         .await
-        .expect("Failed to verify connection to LND node.");
+        {
+            Ok(currency) => currency,
+            Err(err) => {
+                error!("Failed to read network from LND node due to: {}", err);
+
+                process::exit(1);
+            }
+        };
 
         Self {
             cert_path: config.cert_path,
             macaroon_path: config.macaroon_path,
             server_url: config.server_url,
+            currency,
             jobs,
         }
     }
